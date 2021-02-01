@@ -7,23 +7,34 @@ import (
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func TestAccCloudflareCustomSSL_Basic(t *testing.T) {
+	acctest.UseBinaryDriver("acme", Provider)
+	acctest.UseBinaryDriver("tls", Provider)
+
 	t.Parallel()
 	var customSSL cloudflare.ZoneCustomSSL
 	zoneID := os.Getenv("CLOUDFLARE_ZONE_ID")
+	domain := os.Getenv("CLOUDFLARE_DOMAIN")
+	email := os.Getenv("CLOUDFLARE_EMAIL")
+
 	rnd := generateRandomResourceName()
 	resourceName := "cloudflare_custom_ssl." + rnd
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"acme": {},
+			"tls":  {},
+		},
 		CheckDestroy: testAccCheckCloudflareCustomSSLDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckCloudflareCustomSSLCertBasic(zoneID, rnd),
+				Config: testAccCheckCloudflareCustomSSLCertBasic(zoneID, rnd, domain, email),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudflareCustomSSLExists(resourceName, &customSSL),
 					resource.TestCheckResourceAttr(
@@ -44,18 +55,40 @@ func TestAccCloudflareCustomSSL_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckCloudflareCustomSSLCertBasic(zoneID string, rName string) string {
+func testAccCheckCloudflareCustomSSLCertBasic(zoneID, rName, domain, email string) string {
 	return fmt.Sprintf(`
+provider "acme" {
+	server_url = "https://acme-v02.api.letsencrypt.org/directory"
+}
+
+resource "tls_private_key" "private_key" {
+  algorithm = "RSA"
+}
+
+resource "acme_registration" "reg" {
+  account_key_pem = "${tls_private_key.private_key.private_key_pem}"
+  email_address   = "%[4]s"
+}
+
+resource "acme_certificate" "certificate" {
+  account_key_pem           = "${acme_registration.reg.account_key_pem}"
+  common_name               = "%[3]s"
+
+  dns_challenge {
+    provider = "cloudflare"
+  }
+}
+
 resource "cloudflare_custom_ssl" "%[2]s" {
   zone_id = "%[1]s"
   custom_ssl_options = {
-    certificate = "-----BEGIN CERTIFICATE-----\nMIIEsTCCA5mgAwIBAgISA53fvg2BvlK2QXSkdZewcNo4MA0GCSqGSIb3DQEBCwUA\nMEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD\nExpMZXQncyBFbmNyeXB0IEF1dGhvcml0eSBYMzAeFw0yMDA2MjUyMTAzNDdaFw0y\nMDA5MjMyMTAzNDdaMB4xHDAaBgNVBAMTE3RlcnJhZm9ybS5jZmFwaS5uZXQwdjAQ\nBgcqhkjOPQIBBgUrgQQAIgNiAASBYi00+H4E7uUeogweuutTWvuAz8TC6ClQYemH\nCGA6xKrvSgWwjhvVM9joPhGlbUDbINKhVMdZd7q3DgBinVu9GjjKf1Ajxnr6nEsK\naq37tZmtUFawbqnJHAI+O3uTan+jggJpMIICZTAOBgNVHQ8BAf8EBAMCB4AwHQYD\nVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0O\nBBYEFACS0TnEhBjGvOG127Yn2O1/UCOoMB8GA1UdIwQYMBaAFKhKamMEfd265tE5\nt6ZFZe/zqOyhMG8GCCsGAQUFBwEBBGMwYTAuBggrBgEFBQcwAYYiaHR0cDovL29j\nc3AuaW50LXgzLmxldHNlbmNyeXB0Lm9yZzAvBggrBgEFBQcwAoYjaHR0cDovL2Nl\ncnQuaW50LXgzLmxldHNlbmNyeXB0Lm9yZy8wHgYDVR0RBBcwFYITdGVycmFmb3Jt\nLmNmYXBpLm5ldDBMBgNVHSAERTBDMAgGBmeBDAECATA3BgsrBgEEAYLfEwEBATAo\nMCYGCCsGAQUFBwIBFhpodHRwOi8vY3BzLmxldHNlbmNyeXB0Lm9yZzCCAQUGCisG\nAQQB1nkCBAIEgfYEgfMA8QB3AF6nc/nfVsDntTZIfdBJ4DJ6kZoMhKESEoQYdZaB\ncUVYAAABcu2CH2EAAAQDAEgwRgIhAK4dA41POH3dCyi/5CN98MbBRAl8a6LyeQls\nJyZ+y1sIAiEAoMtsQKVgf8APT7/DGj/b4OzMO6EBKWcrGkZpTi7nyyQAdgCyHgXM\ni6LNiiBOh2b5K7mKJSBna9r6cOeySVMt74uQXgAAAXLtgh9PAAAEAwBHMEUCIQC1\nnxSRx2fcqG8gw5z0QK5PGktggqIulg2Jrwr20ZfXKwIgGxNlOEucj1t71h4PaLuy\nnBigJo57ztE5t56o0dlUOzEwDQYJKoZIhvcNAQELBQADggEBACy8MS07SVQLMeGK\na3E7jn7mQciQkt063tnIYbvnUTeYQZVe1Rzk6Tm9GyQoL7MIFAvTHbsB9bNzIRrl\nubefCn4s6PHnVyDGiPY/yQgGjymXyxcsfwVnc3XO3i6N8AN1MQuKMx+Kx69sHVpa\nKq9Qlu1HlStlX/eUWMcoDk1WaCJ7xm17npvdWDweDg71Qlgnl6ukggN+cQwKepw5\n4tMnqmhrzMH+xnH2dTIQ10lgB31AlwBSbOUymhg8XN+BIeXW54mBjdxkBd++7+0q\nv7oFDmljpwQSAC2BMU8ah7lwRhQxgTrG0z10Qdje1CJ8ylRHArIeISlx+jBAwKQh\nulkb7Ck=\n-----END CERTIFICATE-----\n"
-    private_key = "-----BEGIN EC PRIVATE KEY-----\nMIGkAgEBBDD+Um5v/lCBTCvHEcZlLnSz6XX1fEOk5FxfUdiQvcY5x6WXuu3dDgDf\nvKIS0J6AsxygBwYFK4EEACKhZANiAASBYi00+H4E7uUeogweuutTWvuAz8TC6ClQ\nYemHCGA6xKrvSgWwjhvVM9joPhGlbUDbINKhVMdZd7q3DgBinVu9GjjKf1Ajxnr6\nnEsKaq37tZmtUFawbqnJHAI+O3uTan8=\n-----END EC PRIVATE KEY-----\n"
+    certificate = "${acme_certificate.certificate.certificate_pem}"
+    private_key = "${acme_certificate.certificate.private_key_pem}"
     bundle_method = "ubiquitous",
     geo_restrictions = "us"
     type = "legacy_custom"
   }
-}`, zoneID, rName)
+}`, zoneID, rName, domain, email)
 }
 
 func testAccCheckCloudflareCustomSSLDestroy(s *terraform.State) error {
@@ -106,6 +139,8 @@ func TestAccCloudflareCustomSSLWithEmptyGeoRestrictions(t *testing.T) {
 	t.Parallel()
 	var customSSL cloudflare.ZoneCustomSSL
 	zoneID := os.Getenv("CLOUDFLARE_ZONE_ID")
+	domain := os.Getenv("CLOUDFLARE_DOMAIN")
+	email := os.Getenv("CLOUDFLARE_EMAIL")
 	rnd := generateRandomResourceName()
 	resourceName := "cloudflare_custom_ssl." + rnd
 	resource.Test(t, resource.TestCase{
@@ -114,7 +149,7 @@ func TestAccCloudflareCustomSSLWithEmptyGeoRestrictions(t *testing.T) {
 		CheckDestroy: testAccCheckCloudflareCustomSSLDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckCloudflareCustomSSLWithEmptyGeoRestrictions(zoneID, rnd),
+				Config: testAccCheckCloudflareCustomSSLWithEmptyGeoRestrictions(zoneID, rnd, domain, email),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudflareCustomSSLExists(resourceName, &customSSL),
 					resource.TestCheckNoResourceAttr(resourceName, "custom_ssl_options.geo_restrictions"),
@@ -124,15 +159,37 @@ func TestAccCloudflareCustomSSLWithEmptyGeoRestrictions(t *testing.T) {
 	})
 }
 
-func testAccCheckCloudflareCustomSSLWithEmptyGeoRestrictions(zoneID string, rName string) string {
+func testAccCheckCloudflareCustomSSLWithEmptyGeoRestrictions(zoneID, rName, domain, email string) string {
 	return fmt.Sprintf(`
+provider "acme" {
+	server_url = "https://acme-v02.api.letsencrypt.org/directory"
+}
+
+resource "tls_private_key" "private_key" {
+  algorithm = "RSA"
+}
+
+resource "acme_registration" "reg" {
+  account_key_pem = "${tls_private_key.private_key.private_key_pem}"
+  email_address   = "%[4]s"
+}
+
+resource "acme_certificate" "certificate" {
+  account_key_pem           = "${acme_registration.reg.account_key_pem}"
+  common_name               = "%[3]s"
+
+  dns_challenge {
+    provider = "cloudflare"
+  }
+}
+
 resource "cloudflare_custom_ssl" "%[2]s" {
   zone_id = "%[1]s"
   custom_ssl_options = {
-    certificate = "-----BEGIN CERTIFICATE-----\nMIIEsTCCA5mgAwIBAgISA53fvg2BvlK2QXSkdZewcNo4MA0GCSqGSIb3DQEBCwUA\nMEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD\nExpMZXQncyBFbmNyeXB0IEF1dGhvcml0eSBYMzAeFw0yMDA2MjUyMTAzNDdaFw0y\nMDA5MjMyMTAzNDdaMB4xHDAaBgNVBAMTE3RlcnJhZm9ybS5jZmFwaS5uZXQwdjAQ\nBgcqhkjOPQIBBgUrgQQAIgNiAASBYi00+H4E7uUeogweuutTWvuAz8TC6ClQYemH\nCGA6xKrvSgWwjhvVM9joPhGlbUDbINKhVMdZd7q3DgBinVu9GjjKf1Ajxnr6nEsK\naq37tZmtUFawbqnJHAI+O3uTan+jggJpMIICZTAOBgNVHQ8BAf8EBAMCB4AwHQYD\nVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0O\nBBYEFACS0TnEhBjGvOG127Yn2O1/UCOoMB8GA1UdIwQYMBaAFKhKamMEfd265tE5\nt6ZFZe/zqOyhMG8GCCsGAQUFBwEBBGMwYTAuBggrBgEFBQcwAYYiaHR0cDovL29j\nc3AuaW50LXgzLmxldHNlbmNyeXB0Lm9yZzAvBggrBgEFBQcwAoYjaHR0cDovL2Nl\ncnQuaW50LXgzLmxldHNlbmNyeXB0Lm9yZy8wHgYDVR0RBBcwFYITdGVycmFmb3Jt\nLmNmYXBpLm5ldDBMBgNVHSAERTBDMAgGBmeBDAECATA3BgsrBgEEAYLfEwEBATAo\nMCYGCCsGAQUFBwIBFhpodHRwOi8vY3BzLmxldHNlbmNyeXB0Lm9yZzCCAQUGCisG\nAQQB1nkCBAIEgfYEgfMA8QB3AF6nc/nfVsDntTZIfdBJ4DJ6kZoMhKESEoQYdZaB\ncUVYAAABcu2CH2EAAAQDAEgwRgIhAK4dA41POH3dCyi/5CN98MbBRAl8a6LyeQls\nJyZ+y1sIAiEAoMtsQKVgf8APT7/DGj/b4OzMO6EBKWcrGkZpTi7nyyQAdgCyHgXM\ni6LNiiBOh2b5K7mKJSBna9r6cOeySVMt74uQXgAAAXLtgh9PAAAEAwBHMEUCIQC1\nnxSRx2fcqG8gw5z0QK5PGktggqIulg2Jrwr20ZfXKwIgGxNlOEucj1t71h4PaLuy\nnBigJo57ztE5t56o0dlUOzEwDQYJKoZIhvcNAQELBQADggEBACy8MS07SVQLMeGK\na3E7jn7mQciQkt063tnIYbvnUTeYQZVe1Rzk6Tm9GyQoL7MIFAvTHbsB9bNzIRrl\nubefCn4s6PHnVyDGiPY/yQgGjymXyxcsfwVnc3XO3i6N8AN1MQuKMx+Kx69sHVpa\nKq9Qlu1HlStlX/eUWMcoDk1WaCJ7xm17npvdWDweDg71Qlgnl6ukggN+cQwKepw5\n4tMnqmhrzMH+xnH2dTIQ10lgB31AlwBSbOUymhg8XN+BIeXW54mBjdxkBd++7+0q\nv7oFDmljpwQSAC2BMU8ah7lwRhQxgTrG0z10Qdje1CJ8ylRHArIeISlx+jBAwKQh\nulkb7Ck=\n-----END CERTIFICATE-----\n"
-    private_key = "-----BEGIN EC PRIVATE KEY-----\nMIGkAgEBBDD+Um5v/lCBTCvHEcZlLnSz6XX1fEOk5FxfUdiQvcY5x6WXuu3dDgDf\nvKIS0J6AsxygBwYFK4EEACKhZANiAASBYi00+H4E7uUeogweuutTWvuAz8TC6ClQ\nYemHCGA6xKrvSgWwjhvVM9joPhGlbUDbINKhVMdZd7q3DgBinVu9GjjKf1Ajxnr6\nnEsKaq37tZmtUFawbqnJHAI+O3uTan8=\n-----END EC PRIVATE KEY-----\n"
-    bundle_method = "ubiquitous"
+    certificate = "${acme_certificate.certificate.certificate_pem}"
+    private_key = "${acme_certificate.certificate.private_key_pem}"
+    bundle_method = "ubiquitous",
     type = "legacy_custom"
   }
-}`, zoneID, rName)
+}`, zoneID, rName, domain, email)
 }
