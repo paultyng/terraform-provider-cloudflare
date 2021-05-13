@@ -41,15 +41,18 @@ func resourceCloudflareAccessServiceToken() *schema.Resource {
 			"client_id": {
 				Type:     schema.TypeString,
 				Computed: true,
+				ForceNew: true,
 			},
 			"client_secret": {
 				Type:      schema.TypeString,
 				Computed:  true,
 				Sensitive: true,
+				ForceNew:  true,
 			},
 			"expires_at": {
 				Type:     schema.TypeString,
 				Computed: true,
+				ForceNew: true,
 			},
 			"min_days_for_renewal": {
 				Type:     schema.TypeInt,
