@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -20,7 +21,7 @@ func resourceCloudflareAccessServiceToken() *schema.Resource {
 			State: resourceCloudflareAccessServiceTokenImport,
 		},
 
-		CustomizeDiff: resourceCloudflareAccessServiceTokenCustomizeDiff,
+		CustomizeDiff: customdiff.ComputedIf("expires_at", resourceCloudflareAccessServiceTokenExpireDiff),
 
 		Schema: map[string]*schema.Schema{
 			"account_id": {
@@ -59,29 +60,24 @@ func resourceCloudflareAccessServiceToken() *schema.Resource {
 	}
 }
 
-func resourceCloudflareAccessServiceTokenCustomizeDiff(d *schema.ResourceDiff, meta interface{}) error {
-
+func resourceCloudflareAccessServiceTokenExpireDiff(d *schema.ResourceDiff, m interface{}) bool {
 	mindays := d.Get("min_days_for_renewal").(int)
 	if mindays > 0 {
 		expires_at := d.Get("expires_at").(string)
 
 		if expires_at != "" {
-			expected_expiration_date, err := time.Parse(time.RFC3339, expires_at)
-
-			if err != nil {
-				return err
-			}
+			expected_expiration_date, _ := time.Parse(time.RFC3339, expires_at)
 
 			expiration_date := time.Now().Add(time.Duration(mindays) * 24 * time.Hour)
 
 			if expiration_date.After(expected_expiration_date) {
-				d.SetNewComputed("expires_at")
 				d.SetNewComputed("client_secret")
+				return true
 			}
 		}
 	}
 
-	return nil
+	return false
 }
 
 func resourceCloudflareAccessServiceTokenRead(d *schema.ResourceData, meta interface{}) error {
