@@ -14,6 +14,10 @@ before it can be used.
 
 Use the navigation to the left to read about the available resources.
 
+## Getting Started
+
+Try the [Host a Static Website with S3 and Cloudflare](https://learn.hashicorp.com/tutorials/terraform/cloudflare-static-website) tutorial on HashiCorp Learn. In this tutorial, you will set up a static website using AWS S3 as an object store and Cloudflare for DNS, SSL and CDN, then create Cloudflare page rules to always redirect HTTPS and temporarily redirect certain paths.
+
 ## Example Usage
 
 ### Terraform >= 0.13

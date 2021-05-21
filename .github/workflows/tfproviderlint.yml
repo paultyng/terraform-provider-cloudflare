@@ -10,7 +10,7 @@ jobs:
         os: [ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
 
       - name: Run tfproviderlint
         uses: bflad/tfproviderlint-github-action@master

@@ -25,7 +25,7 @@ The following arguments are supported:
 * `zone` - (Required) The DNS zone name which will be added.
 * `paused` - (Optional) Boolean of whether this zone is paused (traffic bypasses Cloudflare). Default: false.
 * `jump_start` - (Optional) Boolean of whether to scan for DNS records on creation. Ignored after zone is created. Default: false.
-* `plan` - (Optional) The name of the commercial plan to apply to the zone, can be updated once the one is created; one of `free`, `pro`, `business`, `enterprise`.
+* `plan` - (Optional) The name of the commercial plan to apply to the zone, can be updated once the zone is created; one of `free`, `pro`, `business`, `enterprise`.
 * `type` - A full zone implies that DNS is hosted with Cloudflare. A partial zone is typically a partner-hosted zone or a CNAME setup. Valid values: `full`, `partial`. Default is `full`.
 
 ## Attributes Reference
