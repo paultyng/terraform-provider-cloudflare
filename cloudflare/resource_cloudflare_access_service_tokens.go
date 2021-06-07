@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/cloudflare/cloudflare-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/customdiff"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudflareAccessServiceToken() *schema.Resource {
@@ -21,7 +20,7 @@ func resourceCloudflareAccessServiceToken() *schema.Resource {
 			State: resourceCloudflareAccessServiceTokenImport,
 		},
 
-		CustomizeDiff: customdiff.ComputedIf("expires_at", resourceCloudflareAccessServiceTokenExpireDiff),
+		// CustomizeDiff: customdiff.ComputedIf("expires_at", resourceCloudflareAccessServiceTokenExpireDiff),
 
 		Schema: map[string]*schema.Schema{
 			"account_id": {

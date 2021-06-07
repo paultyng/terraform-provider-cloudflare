@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func expandInterfaceToStringList(list interface{}) []string {
@@ -205,5 +205,5 @@ func hashCodeStrings(strings []string) string {
 		buf.WriteString(fmt.Sprintf("%s-", s))
 	}
 
-	return fmt.Sprintf("%d", String(buf.String()))
+	return fmt.Sprintf("%d", hashCodeString(buf.String()))
 }

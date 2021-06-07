@@ -10,9 +10,9 @@ import (
 	"golang.org/x/net/idna"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // we enforce the use of the Cloudflare API 'legacy_id' field until the mapping of plan is fixed in cloudflare-go
@@ -81,15 +81,14 @@ func resourceCloudflareZone() *schema.Resource {
 			"meta": {
 				Type:     schema.TypeMap,
 				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+				Elem: &schema.Schema: map[string]*schema.Schema{
+
 						"wildcard_proxiable": {
 							Type: schema.TypeBool,
 						},
 						"phishing_detected": {
 							Type: schema.TypeBool,
 						},
-					},
 				},
 			},
 			"status": {
