@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/cloudflare/cloudflare-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -70,7 +69,7 @@ func dataSourceCloudflareIPRangesRead(d *schema.ResourceData, meta interface{}) 
 	all = append(all, IPv6s...)
 	sort.Strings(all)
 
-	d.SetId(strconv.Itoa(hashcode.String(strings.Join(all, "|"))))
+	d.SetId(strconv.Itoa(hashCodeString(strings.Join(all, "|"))))
 
 	if err := d.Set("cidr_blocks", all); err != nil {
 		return fmt.Errorf("error setting all cidr blocks: %s", err)

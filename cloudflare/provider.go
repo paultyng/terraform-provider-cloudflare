@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -184,9 +184,7 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	c.Transport = logging.NewTransport("Cloudflare", c.Transport)
 	options = append(options, cloudflare.HTTPClient(c))
 
-	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion)
-	providerUserAgent := fmt.Sprintf("terraform-provider-cloudflare/%s", version.ProviderVersion)
-	ua := fmt.Sprintf("%s %s", tfUserAgent, providerUserAgent)
+	ua := fmt.Sprintf("terraform/%s (+https://www.terraform.io) terraform-plugin-sdk/%s terraform-provider-cloudflare/%s", terraformVersion, meta.SDKVersionString(), version.ProviderVersion)
 	options = append(options, cloudflare.UserAgent(ua))
 
 	config := Config{Options: options}
