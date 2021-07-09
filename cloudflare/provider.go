@@ -140,6 +140,7 @@ func Provider() terraform.ResourceProvider {
 			"cloudflare_page_rule":                              resourceCloudflarePageRule(),
 			"cloudflare_rate_limit":                             resourceCloudflareRateLimit(),
 			"cloudflare_record":                                 resourceCloudflareRecord(),
+			"cloudflare_ruleset":                                resourceCloudflareRuleset(),
 			"cloudflare_spectrum_application":                   resourceCloudflareSpectrumApplication(),
 			"cloudflare_static_route":                           resourceCloudflareStaticRoute(),
 			"cloudflare_teams_list":                             resourceCloudflareTeamsList(),
