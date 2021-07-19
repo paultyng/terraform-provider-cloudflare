@@ -22,9 +22,10 @@ func resourceCloudflareApiToken() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"permission_groups": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
 			},
 			"effect": {
 				Type:         schema.TypeString,
@@ -165,7 +166,8 @@ func resourceDataToApiTokenPolices(d *schema.ResourceData) []cloudflare.APIToken
 	for _, p := range policies {
 		policy := p.(map[string]interface{})
 
-		permissionGroups := expandInterfaceToStringList(policy["permission_groups"])
+		permissionGroups := expandSetToStringList(policy["permission_groups"])
+
 		if len(permissionGroups) == 0 {
 			continue
 		}
