@@ -625,7 +625,7 @@ func TransformAccessGroupForSchema(accessGroup []interface{}) []map[string]inter
 				gsuiteCfg := groupValue.(map[string]interface{})
 				gsuiteID = gsuiteCfg["identity_provider_id"].(string)
 				gsuiteEmails = append(gsuiteEmails, gsuiteCfg["email"].(string))
-			case "github-organization":
+			case "github":
 				githubCfg := groupValue.(map[string]interface{})
 				githubID = githubCfg["identity_provider_id"].(string)
 				githubName = githubCfg["name"].(string)
