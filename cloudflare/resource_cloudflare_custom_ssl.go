@@ -165,6 +165,9 @@ func resourceCloudflareCustomSslUpdate(d *schema.ResourceData, meta interface{})
 			updateErr = true
 		} else {
 			log.Printf("[DEBUG] Custom SSL set to: %s", res.ID)
+			if res.ID != certID {
+				d.SetId(res.ID)
+			}
 		}
 
 	}
